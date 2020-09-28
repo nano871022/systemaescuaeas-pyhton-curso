@@ -3,6 +3,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, Integer, String, Sequence, Table, ForeignKey
 from sqlalchemy import create_engine
 from sqlalchemy.orm import relationship, sessionmaker
+import csv
 
 
 engine = create_engine("sqlite:///:memory:")
@@ -64,31 +65,106 @@ class Horario(Base):
 
 Base.metadata.create_all(engine)
 
-class Exports(object):
-    def alumno_curso(self):
-        resultado=session.query(Alumno).join(alumno_curso).join(Curso).all()
-        print(resultado)
-
-    def horario_profesor(self):
-        resultado=session.query(Horario).join(Profesor).all()
-        print(resultado)
-
-    def horario_curso(self):
-        resultado=session.query(Horario).join(Curso).all()
-        print(resultado)
+def crearSession():
+    Session=sessionmaker(bind=engine)
+    return Session()
+    
+class Operaciones(object):
+    def __init__(self):
+        self.session = crearSession()
 
 
+class Exports(Operaciones):
+    def exportarArchivo(self,nombreArchivo,*headers,*body):
+        with open(nombreArchivo,"w") as File:
+            writer=csv.write(File)
+            writer.writerows(headers)      
+            writer.writerows(resultado)        
+        
+class Cursos(Exports):
+    nombreArchivo="curso_alumno.csv"
+    def append(self,curso):
+        self.session.add(curso)
+    def delete(self,curso):
+        self.session.delete(curso)
+    def updated(self,curso):
+        self.session.update(curso)
+    def get(self,curso):
+        self.session.query(Curso).filter(curso).all()
+    def all(self):
+        self.session.query(Curso).all()
+    def export(self):
+        result=self.session.query(Curso).join(alumno_curso).join(Alumno).all()
+        headers=[]
+        self.exportarArchivo(self.nombreArchivo,headers,result)
+        print("El archivo",self.nombreArchivo,"generado.")
+
+class Profesores(Exports):
+    nombreArchivo="profesor_horario.csv"
+    def append(self,profesor):
+        self.session.add(profesor)
+    def delete(self,profesor):
+        self.session.delete(profesor)
+    def updated(self,profesor):
+        self.session.update(profesor)
+    def get(self,curso):
+        self.session.query(Profesor).filter(profesor).all()
+    def all(self):
+        self.session.query(Profesor).all()
+    def export(self):
+        result=self.session.query(Profesor).join(Horario).join(Curso).all()
+        headers=[]
+        self.exportarArchivo(self.nombreArchivo,headers,result)
+        print("El archivo",self.nombreArchivo,"generado.")
+
+class Alumnos(Exports):
+    nombreArchivo="alumno_curso.csv"
+    def append(self,alumno):
+        self.session.add(alumno)
+    def delete(self,alumno):
+        self.session.delete(alumno)
+    def updated(self,alumno):
+        self.session.update(alumno)
+    def get(self,curso):
+        self.session.query(Alumno).filter(alumno).all()
+    def all(self):
+        self.session.query(Alumno).all()
+    def export(self):
+        result=self.session.query(Alumno).join(alumno_curso).join(Curso).all()
+        headers=[]
+        self.exportarArchivo(self.nombreArchivo,headers,result)
+        print("El archivo",self.nombreArchivo,"generado.")
+
+class Horarios(Exports):
+    nombreArchivo="horario_curso.csv"
+    def append(self,horario):
+        self.session.add(horario)
+    def delete(self,horario):
+        self.session.delete(horario)
+    def updated(self,horario):
+        self.session.update(horario)
+    def get(self,horario):
+        self.session.query(Horario).filter(horario).all()
+    def all(self):
+        self.session.query(Horario).all()        
+    def export(self):
+        result=self.session.query(Horario).join(Curso).all()
+        headers=[]
+        self.exportarArchivo(self.nombreArchivo,headers,result)
+        print("El archivo",self.nombreArchivo,"generado.")
+        
 print("BD cargada...")
 
-Session= sessionmaker(bind=engine)
-session = Session()
-
-print("Cursos",session.query(Curso).all())
-print("Profesores:",session.query(Profesor).all())
-print("Alumnos:",session.query(Alumno).all())
-print("Horarios",session.query(Horario).all())
+cursos=Cursos()
+alumnos=Alumnos()
+profesores=Profesores()
+horarios=Horarios()
+print("Cursos",cursos.all())
+print("Profesores:",profesores.all())
+print("Alumnos:",alumnos.all())
+print("Horarios",horarios.all())
 
 export=Exports()
-print("Alumno-Curso:",export.alumno_curso())
-print("Horario-Profesor:",export.horario_profesor())
-print("Horario-Curso:",export.horario_curso())
+print("Alumno-Curso:"    ,cursos.export())
+print("Horario-Profesor:",profesores.export())
+print("Horario-Curso:"   ,horarios.export())
